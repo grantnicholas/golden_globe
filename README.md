@@ -1,1 +1,3 @@
-#You can add the goldenglobes.json to the .gitignore if you don't want it to take forever to download
+#Removed goldenglobes.json from the directory
+#download it from the zip
+
