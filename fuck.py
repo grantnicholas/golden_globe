@@ -12,6 +12,27 @@ def extract_entities(text):
 def extract_people(entities):
 	return [e for e in entities if e.label()=='PERSON']
 
+def get_people_names(people):
+	people_names = []
+	for p in people:
+		print p
+		full_name = []
+		for leaf in p.leaves():
+			print leaf
+			full_name.append(leaf[0])
+		people_names.append(full_name)
+
+	return _convert_full_names(people_names)
+
+def _convert_full_names(people_names):
+
+	def _lambda(name):
+		if len(name)>1:
+			return " ".join(name)
+		else:
+			return name[0]
+	
+	return map(_lambda, people_names)
 
 if __name__ == '__main__':
     text = """
@@ -30,6 +51,7 @@ Dorner posted an online manifesto that warned, "I will bring unconventional
 and asymmetrical warfare to those in LAPD uniform whether on or off duty."
 """
 
-    print extract_people(extract_entities(text))
+print get_people_names(extract_people(extract_entities(text)))
+
 
     

@@ -35,10 +35,10 @@ def memorize_dict(memory, token_dict):
 		else:
 			memory[t]=1
 
-def helper(token_dict, memory, important_words):
+def helper(token_dict, people_dict, memory, important_words):
 	for word in token_dict:
 		if word in important_words:
-			memorize_dict(memory[word], token_dict)
+			memorize_dict(memory[word], people_dict)
 
 
 def extract_entities(text):
@@ -51,6 +51,25 @@ def extract_entities(text):
 def extract_people(entities):
 	return [e for e in entities if e.label()=='PERSON']
 
+def get_people_names(people):
+	people_names = []
+	for p in people:
+		full_name = []
+		for leaf in p.leaves():
+			full_name.append(leaf[0])
+		people_names.append(full_name)
+
+	return _convert_full_names(people_names)
+
+def _convert_full_names(people_names):
+
+	def _lambda(name):
+		if len(name)>1:
+			return " ".join(name)
+		else:
+			return name[0]
+	
+	return map(_lambda, people_names)
 
 def main():
 	count = 0
@@ -58,20 +77,25 @@ def main():
 	filename = './goldenglobes.json'
 	with open(filename, 'r') as f:
 		for line in f:
-			if count>1000:
+			if count>10000:
 				break;
+
 			_text = json.loads(line)['text']
 			text  = _text.lower()
-			pprint(extract_people(extract_entities(_text)))
 			_tokens = word_tokenize(text)
 			tokens  = remove_stopwords(STOP_WORDS,_tokens)
 			token_dict = count_tokens(tokens)
-			bool_list  = search_tokens(token_dict, IMPORTANT_WORDS)
-			helper(token_dict, MEMORY, IMPORTANT_WORDS)
+			#bool_list  = search_tokens(token_dict, IMPORTANT_WORDS)
+			
+			#helper(token_dict, MEMORY, IMPORTANT_WORDS)
 
 
 
 
+			people = extract_people(extract_entities(_text))
+			people_names = get_people_names(people)
+			people_dict  = count_tokens(people_names)
+			helper(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
 
 
 
@@ -79,7 +103,7 @@ def main():
 			count+=1
 
 
-	#pprint(MEMORY)
+	pprint(MEMORY)
 
 if __name__ == "__main__":
 	main()
