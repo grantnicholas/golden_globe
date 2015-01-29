@@ -109,6 +109,21 @@ def memorize_people_if_tokens_match(token_dict, people_dict, memory, important_w
 
 
 """
+SIDE EFFECTS; MUTATES DICTIONARY
+"""
+def _memorize_people_if_tokens_match(token_dict, people_dict, memory, important_words):
+	for phrase in important_words:
+		thecount=0
+		for word in phrase:
+			if word not in token_dict:
+				thecount+=1
+		if len(phrase)>1 and thecount<2:
+			memorize_dict(memory[phrase], people_dict)
+		if len(phrase)<=1 and thecount==0:
+			memorize_dict(memory[phrase], people_dict)
+
+
+"""
 Extract entities from text which are labeled if they are a person or not
 """
 def extract_entities(text):
@@ -144,6 +159,15 @@ def _convert_full_names(people_names):
 	
 	return map(_lambda, people_names)
 
+"""
+Function composition: create dictionary of extracted people name counts from text
+"""
+def text_to_people_dict(text):
+	people = extract_people(extract_entities(text))
+	people_names = get_people_names(people)
+	people_dict  = count_tokens(people_names)
+	return people_dict
+
 
 def get_top_n_vals(memory, n):
 	for d in memory:
@@ -158,21 +182,17 @@ def main():
 	filename = './goldenglobes.json'
 	with open(filename, 'r') as f:
 		for line in f:
-			if count>10000:
+			if count>1000:
 				break;
 
-			_text = json.loads(line)['text']
-			text  = _text.lower()
+			text = json.loads(line)['text']
+			lower_text  = text.lower()
 
-			# _tokens = word_tokenize(text)
-			# tokens  = stem_words(remove_stopwords(STOP_WORDS,_tokens))
-			# token_dict = count_tokens(tokens)
 
-			token_dict = text_to_token_dict(text, STOP_WORDS, True)
+			token_dict = text_to_token_dict(lower_text, STOP_WORDS, True)
 
-			people = extract_people(extract_entities(_text))
-			people_names = get_people_names(people)
-			people_dict  = count_tokens(people_names)
+			people_dict = text_to_people_dict(text)
+
 			memorize_people_if_tokens_match(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
 
 
