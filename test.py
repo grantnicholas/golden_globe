@@ -1,12 +1,56 @@
 import nltk
 from nltk import sent_tokenize, word_tokenize, pos_tag, ne_chunk
 from nltk.corpus import stopwords
+from stemming.porter2 import stem
+
 import json
 from pprint import pprint
 
-STOP_WORDS = set(stopwords.words('english'))
-IMPORTANT_WORDS = ['host', 'winner', 'presenter', 'nominees']
-MEMORY = {'host' : {}, 'winner' : {}, 'presenter' : {} , 'nominees' : {} }
+def fake_globals():
+	STOP_WORDS = set(stopwords.words('english'))
+	IMPORTANT_WORDS = ['hosts', 
+					   'winners', 
+					   'presenters', 
+					   'nominees', 
+					   'best actor drama', 
+					   'best actress drama', 
+					   'best actor comedy musical',
+					   'best actress comedy musical',
+					   'best actor tv',
+					   'best actress tv',
+					   'best animated',
+					   'best foreign language',
+					   'best actor supporting role',
+					   'best actress supporting role',
+					   'best director',
+					   'best screenplay',
+					   'best original score',
+					   'best original song',
+					   'best tv drama',
+					   'best tv comedy musical',
+					   'best actor tv comedy musical',
+					   'best actress tv comedy musical',
+					   'best mini series tv',
+					   'best actress mini series tv',
+					   'best actor mini series tv'
+					   ]
+
+	IMPORTANT_WORDS = tokenize_stem_list(IMPORTANT_WORDS)
+
+	MEMORY = {k: {} for k in IMPORTANT_WORDS}
+
+	return STOP_WORDS, IMPORTANT_WORDS, MEMORY
+
+"""
+Returns a list of tuples
+Note: we end up hashing the phrases in important words, so we must convert the list to a tuple
+"""
+def tokenize_stem_list(alist):
+	def tokenize_stem_one(thestr):
+		return tuple(map(stem, thestr.split(' ')))
+
+	return map(tokenize_stem_one, alist)
+
 
 def count_tokens(tokens):
 	token_dict = {}
@@ -22,12 +66,28 @@ def remove_stopwords(stopwords, tokens):
 	sanitized_tokens = [w for w in tokens if w not in stopwords]
 	return sanitized_tokens
 
-def search_tokens(token_dict, valist):
-	bool_list = [val in token_dict for val in valist]
-	return bool_list
+def stem_words(tokens):
+	return [stem(w) for w in tokens]
 
-#SIDE_EFFECTS
-#DICTIONARY WILL BE MUTATED
+"""
+Function composition: create a dictionary of token counts from text
+"""
+def text_to_token_dict(text, stopwords=None, dostem=False):
+	tokens = word_tokenize(text)
+	token_dict = {}
+
+	if dostem ==True:
+		tokens = stem_words(tokens)
+
+	if stopwords !=None:
+		tokens = remove_stopwords(stopwords, tokens)
+
+	token_dict = count_tokens(tokens)
+	return token_dict
+
+"""
+SIDE EFFECTS; MUTATES DICTIONARY
+"""
 def memorize_dict(memory, token_dict):
 	for t in token_dict:
 		if t in memory:
@@ -35,12 +95,22 @@ def memorize_dict(memory, token_dict):
 		else:
 			memory[t]=1
 
-def helper(token_dict, people_dict, memory, important_words):
-	for word in token_dict:
-		if word in important_words:
-			memorize_dict(memory[word], people_dict)
+"""
+SIDE EFFECTS; MUTATES DICTIONARY
+"""
+def memorize_people_if_tokens_match(token_dict, people_dict, memory, important_words):
+	for phrase in important_words:
+		thebool=1
+		for word in phrase:
+			if word not in token_dict:
+				thebool=0
+		if thebool==1:
+			memorize_dict(memory[phrase], people_dict)
 
 
+"""
+Extract entities from text which are labeled if they are a person or not
+"""
 def extract_entities(text):
     entities = []
     for sentence in sent_tokenize(text):
@@ -51,6 +121,9 @@ def extract_entities(text):
 def extract_people(entities):
 	return [e for e in entities if e.label()=='PERSON']
 
+"""
+Collect the names of the people from the list of entities [ie: REMOVE the labels]
+"""
 def get_people_names(people):
 	people_names = []
 	for p in people:
@@ -71,7 +144,15 @@ def _convert_full_names(people_names):
 	
 	return map(_lambda, people_names)
 
+
+def get_top_n_vals(memory, n):
+	for d in memory:
+		print d
+		for w in sorted(memory[d], key=memory[d].get, reverse=True)[0:n]:
+			print '\t', w, memory[d][w]
+
 def main():
+	STOP_WORDS, IMPORTANT_WORDS, MEMORY = fake_globals()
 	count = 0
 	
 	filename = './goldenglobes.json'
@@ -82,20 +163,17 @@ def main():
 
 			_text = json.loads(line)['text']
 			text  = _text.lower()
-			_tokens = word_tokenize(text)
-			tokens  = remove_stopwords(STOP_WORDS,_tokens)
-			token_dict = count_tokens(tokens)
-			#bool_list  = search_tokens(token_dict, IMPORTANT_WORDS)
-			
-			#helper(token_dict, MEMORY, IMPORTANT_WORDS)
 
+			# _tokens = word_tokenize(text)
+			# tokens  = stem_words(remove_stopwords(STOP_WORDS,_tokens))
+			# token_dict = count_tokens(tokens)
 
-
+			token_dict = text_to_token_dict(text, STOP_WORDS, True)
 
 			people = extract_people(extract_entities(_text))
 			people_names = get_people_names(people)
 			people_dict  = count_tokens(people_names)
-			helper(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
+			memorize_people_if_tokens_match(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
 
 
 
@@ -103,7 +181,8 @@ def main():
 			count+=1
 
 
-	pprint(MEMORY)
+	#pprint(MEMORY)
+	get_top_n_vals(MEMORY, 5)
 
 if __name__ == "__main__":
 	main()

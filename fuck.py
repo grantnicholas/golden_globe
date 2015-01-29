@@ -1,6 +1,7 @@
 import nltk
 from nltk import sent_tokenize, word_tokenize, pos_tag, ne_chunk
 from pprint import pprint
+from stemming.porter2 import stem
 
 def extract_entities(text):
     entities = []
@@ -53,5 +54,11 @@ and asymmetrical warfare to those in LAPD uniform whether on or off duty."
 
 print get_people_names(extract_people(extract_entities(text)))
 
+def tokenize_stem_list(alist):
+	def tokenize_stem_one(thestr):
+		return tuple(map(stem, thestr.split(' ')))
 
+	return map(tokenize_stem_one, alist)
+
+print tokenize_stem_list(['best actor', 'best actress', 'pooper pooping', 'hosts'])
     
