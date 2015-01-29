@@ -35,6 +35,13 @@ def _convert_full_names(people_names):
 	
 	return map(_lambda, people_names)
 
+def _get_people_names(text):
+	names = []
+	for sentence in sent_tokenize(text):
+		names.extend(filter(lambda x: x[0].isupper(), word_tokenize(sentence)))
+	return names
+
+
 if __name__ == '__main__':
     text = """
 A multi-agency manhunt is under way across several states and Mexico after
@@ -53,6 +60,7 @@ and asymmetrical warfare to those in LAPD uniform whether on or off duty."
 """
 
 print get_people_names(extract_people(extract_entities(text)))
+print _get_people_names(text)
 
 def tokenize_stem_list(alist):
 	def tokenize_stem_one(thestr):
