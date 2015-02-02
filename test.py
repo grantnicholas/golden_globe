@@ -6,6 +6,9 @@ from stemming.porter2 import stem
 import json
 from pprint import pprint
 
+import preprocess
+import timeit
+
 def fake_globals():
 	STOP_WORDS = set(stopwords.words('english'))
 	IMPORTANT_WORDS = ['hosts', 
@@ -175,34 +178,47 @@ def get_top_n_vals(memory, n):
 		for w in sorted(memory[d], key=memory[d].get, reverse=True)[0:n]:
 			print '\t', w, memory[d][w]
 
+"""
+Function to create preprocess text
+"""
+
+def create_preprocess_wordlist():
+	wordlist = []
+	with open('./preprocess.txt', 'r') as f:
+		wordlist = f.read().replace('\n','').split(',')
+		return wordlist 
+
 def main():
 	STOP_WORDS, IMPORTANT_WORDS, MEMORY = fake_globals()
 	count = 0
 	
+	start = timeit.default_timer()
+
+	# preprocess_word_list = create_preprocess_wordlist()
+	# print preprocess_word_list
+
+
 	filename = './goldenglobes.json'
 	with open(filename, 'r') as f:
 		for line in f:
-			if count>1000:
+			if count>10000:
 				break;
 
 			text = json.loads(line)['text']
 			lower_text  = text.lower()
 
-
+			# if preprocess.filter_tweet(lower_text, preprocess_word_list):
 			token_dict = text_to_token_dict(lower_text, STOP_WORDS, True)
-
 			people_dict = text_to_people_dict(text)
-
 			memorize_people_if_tokens_match(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
-
-
-
 
 			count+=1
 
 
-	#pprint(MEMORY)
+	pprint(MEMORY)
 	get_top_n_vals(MEMORY, 5)
-
+	end = timeit.default_timer()
+	print(end-start)
+	
 if __name__ == "__main__":
 	main()

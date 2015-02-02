@@ -1,0 +1,3 @@
+host,
+present,presenting,presented,
+win,won,take,steal
