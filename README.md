@@ -1,3 +1,9 @@
+*Changelog Feb 2:*
+Added preprocess.txt which preprocess the tweets to get rid useless tweets. 
+The program runs ~53 seconds now returning almost identifcal result vs w/o
+preprocessing. (only differs in small counts, no difference in ranking).
+Could add more words to the preprocess list
+
 *Changelog Jan 29:*
 Used a naive person detector (ie: is a word capitalized) instead of
 the part of speech tagger within NLTK. Sped up the program a shitton. 
