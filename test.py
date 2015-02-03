@@ -120,6 +120,16 @@ def fake_globals():
 					  	 'film',
 					  	 'series'
 					  	]
+	"""
++	SOW: set of words that we use to reduce the computational time
++	If the tweet has no word in an "important set of words" then don't bother
++	doing any more parsing of the tweet as it is not useful
++
++	FOW: filtered set of words that we use to remove common words from our output. 
++	ie) lots of categories will have "best" or "globes" or "golden" in their top outputs
++	so lets remove them
++	"""
+
 	SOW = set([])
 	FOW = set([])
 
@@ -168,8 +178,9 @@ def stem_words(tokens):
 	return [stem(w) for w in tokens]
 
 """
-Function composition: create a dictionary of token counts from text
+create a dictionary of token counts from text
 """
+
 def text_to_token_dict(text, stopwords=None, dostem=False):
 	tokens = word_tokenize(text)
 	token_dict = {}
@@ -295,24 +306,26 @@ def get_top_n_vals(memory, n):
 """
 Function to create preprocess text
 """
-def create_preprocess_wordlist():
+def create_preprocess_wordset():
 	wordlist = []
 	with open('./preprocess.txt', 'r') as f:
 		wordlist = f.read().replace('\n','').split(',')
-		return wordlist 
+		return set(wordlist) 
 
 @timeit
 def main():
 	STOP_WORDS, IMPORTANT_WORDS, MEMORY, SOW, FOW = fake_globals()
 	count = 0
 
-	preprocess_word_list = create_preprocess_wordlist()
-	print preprocess_word_list
+	pp_wordset = create_preprocess_wordset()
+	wordset = pp_wordset | SOW
 
 	filename = './goldenglobes.json'
-	with open(filename, 'r') as f:
+	filename_new = './goldenglobes2015.json'
+
+	with open(filename_new, 'r') as f:
 		for line in f:
-			if count>1000000:
+			if count>10000:
 				break;
 
 			text = json.loads(line)['text']
@@ -320,22 +333,21 @@ def main():
 
 			"""
 				Preprocess and filter out unuseful tweets based on preprocess.txt
-			"""
-			if preprocess.filter_tweet(lower_text, preprocess_word_list):
-
-				token_dict = text_to_token_dict(lower_text,STOP_WORDS,True)
-
-				"""
 				Only do the expensive people parsing step if the tweet has any of the
 				keywords we identify at the beginning
 				Speedup of around ~5times
-				"""
-				if any([True for tok in token_dict if tok in SOW]):
-					"""This people dict step in NLTK is slow"""
-					#people_dict = text_to_people_dict(text)
-					people_dict =  text_to_people_dict_naive_fast(text,FOW)
+				
+			"""
+			if preprocess.filter_tweet(lower_text, pp_wordset):
 
-					memorize_people_if_tokens_match(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
+				token_dict = text_to_token_dict(lower_text,STOP_WORDS,True)
+
+				# if any([True for tok in token_dict if tok in SOW]):
+				"""This people dict step in NLTK is slow"""
+				#people_dict = text_to_people_dict(text)
+				people_dict =  text_to_people_dict_naive_fast(text,FOW)
+
+				memorize_people_if_tokens_match(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
 
 			count+=1
 
