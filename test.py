@@ -40,20 +40,6 @@ def timeit(f):
 
     return timed
 
-# class keywords:
-
-# 	def __init__(self, required_words, or_words):
-# 		self.required_words = [word.split(' ') for word in required_words]
-# 		self.or_words = [word.split(' ') for word in or_words]
-
-# 	def eq(self, wordlist):
-# 		setofwords = set(wordlist)
-
-# 		if not all([word in setofwords for word in self.required_words]):
-# 			return False
-
-# 		return any([word in setofwords for word in self.or_words])
-
 
 
 def fake_globals():
@@ -147,6 +133,7 @@ def fake_globals():
 
 
 	TRIE = create_memory_trie(_IMPORTANT_WORDS)
+	pprint(TRIE)
 
 	IMPORTANT_WORDS = tokenize_stem_list(IMPORTANT_WORDS)
 	MEMORY = {k: {} for k in IMPORTANT_WORDS}
@@ -161,16 +148,19 @@ def create_memory_trie(IMPORTANT_WORDS):
 	print IMPORTANT_WORDS
 
 	for phrase in IMPORTANT_WORDS:
-		memy = {}
-		reqs = []; optional = []
+		memy = [{None : {} }]
+		reqs = []
 		for word in phrase.split(' '):
 			if '|' in word:
+				oplist = []
 				for op in word.split('|'):
-					optional.append(stem(op))
+					oplist.append(stem(op))
+				memo = {k: {} for k in oplist}
+				memy.append(memo)
 			else:
 				reqs.append(stem(word))
-		mem[tuple(reqs)] = {k: {} for k in optional}
-		mem[tuple(reqs)][None] = {}
+
+		mem[tuple(reqs)] = tuple(memy)
 
 	return mem
 
@@ -182,26 +172,24 @@ def _trie_memorize_people_if_tokens_match(token_dict, people_dict, memory, impor
 		thebool=1
 		print phrase
 		for word in phrase:
-			#print word
 			if word not in token_dict:
 				thebool=0
 
-		opval = None
 		if thebool==1:
-			count = 0
-			for opword in memory[phrase]:
-				count+=1
-				if opword in token_dict:
-					opval = opword
+			for option in memory[phrase]:
+				opval = None
+				count = 0
+				for k,opword in enumerate(option):
+					count+=1
+					if opword in token_dict:
+						opval = opword
 
-			print opval
-			print count
-			if count==1:
-				memorize_dict(memory[phrase][None], people_dict)
+				if count==1:
+					print memory[phrase][0][None]
+					memorize_dict(memory[phrase][0][None], people_dict)
 
-			elif opval!=None:
-				memorize_dict(memory[phrase][opval], people_dict)
-
+				elif opval!=None:
+					memorize_dict(option[opval], people_dict)
 
 """
 Returns a list of tuples
@@ -380,7 +368,6 @@ def create_preprocess_wordset():
 def main():
 	STOP_WORDS, IMPORTANT_WORDS, MEMORY, SOW, FOW, TRIE = fake_globals()
 	count = 0
-
 	pp_wordset = create_preprocess_wordset()
 	wordset = pp_wordset | SOW
 
@@ -402,7 +389,7 @@ def main():
 				Speedup of around ~5times
 				
 			"""
-			if preprocess.filter_tweet(lower_text, pp_wordset):
+			if preprocess.filter_tweet(lower_text, wordset):
 
 				token_dict = text_to_token_dict(lower_text,STOP_WORDS,True)
 
