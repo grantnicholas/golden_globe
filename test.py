@@ -84,32 +84,33 @@ def fake_globals():
 					   'best actress miniseries tv',
 					   'best actor miniseries tv'
 					   ]
-	_IMPORTANT_WORDS = [('hosts'),
-						('winners'),
-						('presenters'),
-						('nominees'), 
-					    ('actor drama'), 
-					    ('actress drama'), 
-					    ('actor','comedy musical'),
-					    ('actress','comedy musical'),
-					    ('actor','tv television'),
-					    ('actress','tv television'),
-					    ('animated'),
-					    ('foreign language'),
-					    ('actor supporting'),
-					    ('actress supporting'),
-					    ('director'),
-					    ('screenplay'),
-					    ('original score'),
-					    ('original song'),
-					    ('drama','tv television'),
-					    ('comedy musical', 'tv television'),
-					    ('actor comedy musical','tv television'),
-					    ('actress comedy musical', 'tv television'),
-					    ('miniseries','tv television'),
-					    ('actress miniseries','tv television'),
-					    ('actor miniseries','tv television')
-						]
+
+	_IMPORTANT_WORDS = ['hosts', 
+					   'winners', 
+					   'presenters', 
+					   'nominees', 
+					   'best|winner actor drama', 
+					   'best|winner actress drama', 
+					   'best|winner actor comedy|musical',
+					   'best|winner actress comedy|musical',
+					   'best|winner actor tv|television',
+					   'best|winner actress tv|television',
+					   'best|winner animated',
+					   'best|winner foreign language',
+					   'best|winner actor supporting|role',
+					   'best|winner actress supporting|role',
+					   'best|winner director',
+					   'best|winner screenplay',
+					   'best|winner original score',
+					   'best|winner original song',
+					   'best|winner tv|television drama',
+					   'best|winner tv|television comedy|musical',
+					   'best|winner actor tv|television comedy|musical',
+					   'best|winner actress tv|television comedy|musical',
+					   'best|winner miniseries tv',
+					   'best|winner actress miniseries tv|television',
+					   'best|winner actor miniseries tv|television'
+					   ]
 
 	FILT_WORDS = 		['golden',
 				  		 'globes',
@@ -144,10 +145,63 @@ def fake_globals():
 	for word in FILT_WORDS:
 		FOW.add(stem(word.lower()))
 
+
+	TRIE = create_memory_trie(_IMPORTANT_WORDS)
+
 	IMPORTANT_WORDS = tokenize_stem_list(IMPORTANT_WORDS)
 	MEMORY = {k: {} for k in IMPORTANT_WORDS}
 
-	return STOP_WORDS, IMPORTANT_WORDS, MEMORY, SOW, FOW
+
+
+	return STOP_WORDS, IMPORTANT_WORDS, MEMORY, SOW, FOW, TRIE
+
+
+def create_memory_trie(IMPORTANT_WORDS):	
+	mem = {}
+	print IMPORTANT_WORDS
+
+	for phrase in IMPORTANT_WORDS:
+		memy = {}
+		reqs = []; optional = []
+		for word in phrase.split(' '):
+			if '|' in word:
+				for op in word.split('|'):
+					optional.append(stem(op))
+			else:
+				reqs.append(stem(word))
+		mem[tuple(reqs)] = {k: {} for k in optional}
+		mem[tuple(reqs)][None] = {}
+
+	return mem
+
+"""
+SIDE EFFECTS; MUTATES DICTIONARY
+"""
+def _trie_memorize_people_if_tokens_match(token_dict, people_dict, memory, important_words):
+	for phrase in memory:
+		thebool=1
+		print phrase
+		for word in phrase:
+			#print word
+			if word not in token_dict:
+				thebool=0
+
+		opval = None
+		if thebool==1:
+			count = 0
+			for opword in memory[phrase]:
+				count+=1
+				if opword in token_dict:
+					opval = opword
+
+			print opval
+			print count
+			if count==1:
+				memorize_dict(memory[phrase][None], people_dict)
+
+			elif opval!=None:
+				memorize_dict(memory[phrase][opval], people_dict)
+
 
 """
 Returns a list of tuples
@@ -222,10 +276,20 @@ SIDE EFFECTS; MUTATES DICTIONARY
 """
 def _memorize_people_if_tokens_match(token_dict, people_dict, memory, important_words):
 	for phrase in important_words:
-		required_words, optional_words = phrase
-		if all([word in token_dict for word in required_words]):
-			if any([word in token_dict for word in optional_words]):
-				memorize_dict(memory[phrase], people_dict)
+		thebool=1
+		for word in phrase.split(' '):
+			if '|' in word:
+				opbool=0
+				for op in word.split('|'):
+					if op in token_dict:
+						opbool=1
+				if opbool==0:
+					thebool=0
+			else:
+				if word not in token_dict:
+					thebool=0
+		if thebool==1:
+			memorize_dict(memory[phrase], people_dict)
 		
 
 
@@ -314,7 +378,7 @@ def create_preprocess_wordset():
 
 @timeit
 def main():
-	STOP_WORDS, IMPORTANT_WORDS, MEMORY, SOW, FOW = fake_globals()
+	STOP_WORDS, IMPORTANT_WORDS, MEMORY, SOW, FOW, TRIE = fake_globals()
 	count = 0
 
 	pp_wordset = create_preprocess_wordset()
@@ -348,11 +412,12 @@ def main():
 				people_dict =  text_to_people_dict_naive_fast(text,FOW)
 
 				memorize_people_if_tokens_match(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
-
+				_trie_memorize_people_if_tokens_match(token_dict, people_dict, TRIE, IMPORTANT_WORDS)
 			count+=1
 
 
-	#pprint(MEMORY)
-	get_top_n_vals(MEMORY, 5)
+	pprint(MEMORY)
+	pprint(TRIE)
+	#get_top_n_vals(MEMORY, 5)
 if __name__ == "__main__":
 	main()
