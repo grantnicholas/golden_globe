@@ -105,7 +105,9 @@ def fake_globals():
 					  	 'wins',
 					  	 'movie',
 					  	 'film',
-					  	 'series'
+					  	 'series',
+					  	 'picture',
+					  	 'motion'
 					  	]
 	"""
 +	SOW: set of words that we use to reduce the computational time
@@ -148,15 +150,14 @@ def create_memory_trie(IMPORTANT_WORDS):
 	print IMPORTANT_WORDS
 
 	for phrase in IMPORTANT_WORDS:
-		memy = [{None : {} }]
+		memy = [{}]
 		reqs = []
 		for word in phrase.split(' '):
 			if '|' in word:
 				oplist = []
 				for op in word.split('|'):
 					oplist.append(stem(op))
-				memo = {k: {} for k in oplist}
-				memy.append(memo)
+				memy.append(oplist)
 			else:
 				reqs.append(stem(word))
 
@@ -164,32 +165,27 @@ def create_memory_trie(IMPORTANT_WORDS):
 
 	return mem
 
+
 """
 SIDE EFFECTS; MUTATES DICTIONARY
 """
 def _trie_memorize_people_if_tokens_match(token_dict, people_dict, memory, important_words):
 	for phrase in memory:
 		thebool=1
-		print phrase
 		for word in phrase:
 			if word not in token_dict:
 				thebool=0
 
 		if thebool==1:
-			for option in memory[phrase]:
-				opval = None
-				count = 0
-				for k,opword in enumerate(option):
-					count+=1
-					if opword in token_dict:
-						opval = opword
+			flag = True
+			for k,option in enumerate(memory[phrase]):
+				if k!=0:
+					if not any([True for opword in option if opword in token_dict]):
+						flag=False
 
-				if count==1:
-					print memory[phrase][0][None]
-					memorize_dict(memory[phrase][0][None], people_dict)
+			if flag==True:
+				memorize_dict(memory[phrase][0], people_dict)
 
-				elif opval!=None:
-					memorize_dict(option[opval], people_dict)
 
 """
 Returns a list of tuples
@@ -355,6 +351,19 @@ def get_top_n_vals(memory, n):
 		for w in sorted(memory[d], key=memory[d].get, reverse=True)[0:n]:
 			print '\t', w, memory[d][w]
 
+def trie_top_n_vals(trie, n):
+	for k in trie:
+		print k
+		for key,v in enumerate(trie[k]):
+			if key!=0:
+				print '\t',v
+		for w in sorted(trie[k][0], key=trie[k][0].get, reverse=True)[0:n]:
+			print '\t\t', w, trie[k][0][w]
+
+
+			
+
+
 """
 Function to create preprocess text
 """
@@ -376,7 +385,7 @@ def main():
 
 	with open(filename_new, 'r') as f:
 		for line in f:
-			if count>10000:
+			if count>500000:
 				break;
 
 			text = json.loads(line)['text']
@@ -398,13 +407,15 @@ def main():
 				#people_dict = text_to_people_dict(text)
 				people_dict =  text_to_people_dict_naive_fast(text,FOW)
 
-				memorize_people_if_tokens_match(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
+				#memorize_people_if_tokens_match(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
 				_trie_memorize_people_if_tokens_match(token_dict, people_dict, TRIE, IMPORTANT_WORDS)
 			count+=1
 
 
-	pprint(MEMORY)
-	pprint(TRIE)
+	#pprint(MEMORY)
+	#pprint(TRIE)
 	#get_top_n_vals(MEMORY, 5)
+	trie_top_n_vals(TRIE, 5)
+
 if __name__ == "__main__":
 	main()
