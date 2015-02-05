@@ -382,8 +382,8 @@ def main():
 
 	filename = './goldenglobes.json'
 	filename_new = './goldenglobes2015.json'
-
-	with open(filename_new, 'r') as f:
+	filename_processed = './processed.json'
+	with open(filename_processed, 'r') as f:
 		for line in f:
 			if count>500000:
 				break;
@@ -407,15 +407,15 @@ def main():
 				#people_dict = text_to_people_dict(text)
 				people_dict =  text_to_people_dict_naive_fast(text,FOW)
 
-				#memorize_people_if_tokens_match(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
-				_trie_memorize_people_if_tokens_match(token_dict, people_dict, TRIE, IMPORTANT_WORDS)
+				memorize_people_if_tokens_match(token_dict, people_dict, MEMORY, IMPORTANT_WORDS)
+				# _trie_memorize_people_if_tokens_match(token_dict, people_dict, TRIE, IMPORTANT_WORDS)
 			count+=1
 
 
 	#pprint(MEMORY)
 	#pprint(TRIE)
-	#get_top_n_vals(MEMORY, 5)
-	trie_top_n_vals(TRIE, 5)
+	get_top_n_vals(MEMORY, 5)
+	# trie_top_n_vals(TRIE, 5)
 
 if __name__ == "__main__":
 	main()
