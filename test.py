@@ -433,7 +433,7 @@ def main():
 	get_top_n_vals(MEMORY, 5)
 
 	trie_top_n_vals(TRIE, 5)
-	pprint(get_trie_top_n_vals(TRIE, 5))
+	#pprint(get_trie_top_n_vals(TRIE, 5))
 
 
 if __name__ == "__main__":
